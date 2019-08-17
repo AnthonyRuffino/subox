@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/src/main/java/subox/Subox.java" line="60" mnemonic="6" />
+    <bookmark url="file://$PROJECT_DIR$/src/main/java/subox/Subox.java" line="64" mnemonic="6" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3ac43f63-f708-40b2-aaf6-b335b10fbaee" name="Default Changelist" comment="">
@@ -29,8 +29,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/subox/Subox.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="570">
-              <caret line="130" column="10" lean-forward="true" selection-start-line="130" selection-start-column="10" selection-end-line="130" selection-end-column="10" />
+            <state relative-caret-position="225">
+              <caret line="178" column="37" selection-start-line="178" selection-start-column="8" selection-end-line="178" selection-end-column="37" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -127,6 +127,7 @@
       <find>\n</find>
       <find>&quot;\n\n&quot;</find>
       <find>close</find>
+      <find>&quot; - &quot;</find>
     </findStrings>
     <replaceStrings>
       <replace />
@@ -193,6 +194,11 @@
               <item name="main" type="462c0819:PsiDirectoryNode" />
               <item name="java" type="462c0819:PsiDirectoryNode" />
               <item name="subox" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="subox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="subox" type="462c0819:PsiDirectoryNode" />
+              <item name="target" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -299,15 +305,16 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1566051145070</updated>
-      <workItem from="1566051149265" duration="11669000" />
+      <workItem from="1566051149265" duration="15859000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="11669000" />
+    <option name="totallyTimeSpent" value="15859000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="73" y="-5" width="2487" height="1445" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="Designer" />
       <window_info id="UI Designer" />
@@ -450,8 +457,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/subox/Subox.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="570">
-          <caret line="130" column="10" lean-forward="true" selection-start-line="130" selection-start-column="10" selection-end-line="130" selection-end-column="10" />
+        <state relative-caret-position="225">
+          <caret line="178" column="37" selection-start-line="178" selection-start-column="8" selection-end-line="178" selection-end-column="37" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

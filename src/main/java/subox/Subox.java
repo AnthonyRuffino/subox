@@ -8,6 +8,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,6 +31,8 @@ public class Subox {
     public static final String APPT_RESOURCE = "\"Appt. Resource\"";
     public static final String NEWLINE = System.lineSeparator();
 
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("mm/dd/yyyy");
+
 
     public static void main(String[] args) throws Exception {
         Subox subox = new Subox();
@@ -41,14 +45,14 @@ public class Subox {
     public void processAllFiles() throws Exception {
 
 
-        Set<String> uniqueAccounts = new HashSet<>();
+        Map<String, Record> uniqueAccounts = new HashMap<>();
 
         Map<String, Integer> zipCount = new HashMap<>();
         Map<String, Integer> cityCount = new HashMap<>();
         Map<String, Integer> insuranceCount = new HashMap<>();
         StringBuilder unknownZips = new StringBuilder();
 
-        Map<String, Set<String>> resourceCount = new HashMap<>();
+        Map<String, Integer> resourceCount = new HashMap<>();
 
         csvPaths.forEach(f -> {
             System.out.println(f);
@@ -74,54 +78,68 @@ public class Subox {
             boolean headerParsed = false;
 
             try {
-                for (CSVRecord record : csvParser) {
+                for (CSVRecord csvRecord : csvParser) {
 
-                    if(!headerParsed) {
+                    if (!headerParsed) {
                         headerParsed = true;
                         continue;
                     }
 
-                    String accountNumber = record.get(ACCOUNT_NUMBER);
-                    String zip = record.get(ZIP);
-                    String insurance = record.get(INSURANCE);
-                    String date = record.get(APPT_DATE);
-                    String resource = record.get(APPT_RESOURCE);
+                    Record record = new Record();
+                    record.accountNumber = csvRecord.get(ACCOUNT_NUMBER);
+                    record.zip = csvRecord.get(ZIP);
+                    record.insurance = csvRecord.get(INSURANCE);
+                    record.date = csvRecord.get(APPT_DATE);
+                    record.resource = csvRecord.get(APPT_RESOURCE);
 
 
-                    if(!uniqueAccounts.contains(accountNumber)) {
-                        uniqueAccounts.add(accountNumber);
+                    if (!uniqueAccounts.containsKey(record.accountNumber)) {
+                        uniqueAccounts.put(record.accountNumber, record);
 
-                        if(!zipCount.containsKey(zip)) {
-                            zipCount.put(zip, 0);
+                        if (!zipCount.containsKey(record.zip)) {
+                            zipCount.put(record.zip, 0);
                         }
-                        zipCount.put(zip, zipCount.get(zip) + 1);
+                        zipCount.put(record.zip, zipCount.get(record.zip) + 1);
 
-                        String city = zipMap.get(zip);
-                        if(city == null) {
-                            unknownZips.append("["+zip+"]");
+                        String city = zipMap.get(record.zip);
+                        if (city == null) {
+                            unknownZips.append("[" + record.zip + "]");
                             city = "other";
                         }
-                        if(!cityCount.containsKey(city)) {
+                        if (!cityCount.containsKey(city)) {
                             cityCount.put(city, 0);
                         }
                         cityCount.put(city, cityCount.get(city) + 1);
 
-                        if(!insuranceCount.containsKey(insurance)) {
-                            insuranceCount.put(insurance, 0);
+                        if (!insuranceCount.containsKey(record.insurance)) {
+                            insuranceCount.put(record.insurance, 0);
                         }
-                        insuranceCount.put(insurance, insuranceCount.get(insurance) + 1);
-                    }
+                        insuranceCount.put(record.insurance, insuranceCount.get(record.insurance) + 1);
+                    } else {
+                        Date thisDate;
+                        Date latestDate;
+                        try {
+                            thisDate = dateFormat.parse(record.date);
+                        } catch (ParseException e) {
+                            throw new RuntimeException("Issue parsing date in file[" + f + "]. Account #: " + record + ". Date: " + record.date);
+                        }
 
-                    if(!resourceCount.containsKey(resource)) {
-                        resourceCount.put(resource, new HashSet<>());
+                        try {
+                            Record latestRecord = uniqueAccounts.get(record.accountNumber);
+                            latestDate = dateFormat.parse(latestRecord.date);
+                        } catch (ParseException e) {
+                            throw new RuntimeException("Issue parsing date in file[" + f + "]. Account #: " + record + ". Date: " + record.date);
+                        }
+
+                        if (thisDate.getTime() > latestDate.getTime()) {
+                            uniqueAccounts.put(record.accountNumber, record);
+                        }
                     }
-                    String resourceKey = accountNumber + "-" + date;
-                    resourceCount.get(resource).add(resourceKey);
 
                 }
             } finally {
                 try {
-                    if(csvParser != null && !csvParser.isClosed()) {
+                    if (csvParser != null && !csvParser.isClosed()) {
                         csvParser.close();
                     }
                 } catch (IOException e) {
@@ -130,8 +148,14 @@ public class Subox {
             }
         });
 
-        final StringBuffer sb = new StringBuffer();
+        uniqueAccounts.forEach((a, r) -> {
+            if (!resourceCount.containsKey(r.resource)) {
+                resourceCount.put(r.resource, 0);
+            }
+            resourceCount.put(r.resource, resourceCount.get(r.resource) + 1);
+        });
 
+        final StringBuffer sb = new StringBuffer();
         sb.append("Files processed: ");
         csvPaths.forEach((file) -> sb.append(NEWLINE + file));
         sb.append(NEWLINE + NEWLINE);
@@ -140,25 +164,25 @@ public class Subox {
 
         sb.append(NEWLINE + NEWLINE);
         sb.append("\nZip totals: ");
-        zipCount.forEach((z,cnt) -> sb.append(NEWLINE + z + ": " + cnt));
+        zipCount.forEach((z, cnt) -> sb.append(NEWLINE + z + ": " + cnt));
 
         sb.append(NEWLINE + NEWLINE);
         String unknowZipsString = unknownZips.toString();
-        if(!unknowZipsString.isEmpty()) {
+        if (!unknowZipsString.isEmpty()) {
             sb.append("\nUnknown zips: " + unknowZipsString);
         }
 
         sb.append(NEWLINE + NEWLINE);
         sb.append("\nCity totals: ");
-        cityCount.forEach((c,cnt) -> sb.append(NEWLINE + c + ": " + cnt));
+        cityCount.forEach((c, cnt) -> sb.append(NEWLINE + c + ": " + cnt));
 
         sb.append(NEWLINE + NEWLINE);
         sb.append("\nInsurance totals: ");
-        insuranceCount.forEach((i,cnt) -> sb.append(NEWLINE + i + ": " + cnt));
+        insuranceCount.forEach((i, cnt) -> sb.append(NEWLINE + i + ": " + cnt));
 
         sb.append(NEWLINE + NEWLINE);
         sb.append("\nResource totals: ");
-        resourceCount.forEach((i,cnt) -> sb.append(NEWLINE + i + ": " + cnt.size()));
+        resourceCount.forEach((i, cnt) -> sb.append(NEWLINE + i + ": " + cnt));
 
         Files.write(processedPath.resolve("results.txt"), sb.toString().getBytes());
 
@@ -173,8 +197,7 @@ public class Subox {
                 System.out.println("Error moving source csv file" + e.getMessage());
             }
 
-            if(temp == null)
-            {
+            if (temp == null) {
                 System.out.println("Failed to move csv file: " + file);
             }
         });
@@ -259,5 +282,13 @@ public class Subox {
         } else {
             System.out.println("Files found: " + csvPaths.size());
         }
+    }
+
+    public class Record {
+        String accountNumber;
+        String zip;
+        String insurance;
+        String date;
+        String resource;
     }
 }
