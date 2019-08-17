@@ -27,6 +27,7 @@ public class Subox {
     public static final String INSURANCE = "\"Pri.Insurance_name\"";
     public static final String APPT_DATE = "\"Appt. Date\"";
     public static final String APPT_RESOURCE = "\"Appt. Resource\"";
+    public static final String NEWLINE = System.lineSeparator();
 
 
     public static void main(String[] args) throws Exception {
@@ -56,93 +57,110 @@ public class Subox {
 
             CSVFormat format = CSVFormat.EXCEL.withHeader(ACCOUNT_NUMBER, ZIP, INSURANCE, APPT_DATE, APPT_RESOURCE);
 
+            InputStream stream;
+            try {
+                stream = new FileInputStream(csvFile);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException("Error reading stream: " + e);
+            }
+
             CSVParser csvParser = null;
             try {
-                csvParser = format.parse(new InputStreamReader(new FileInputStream(csvFile)));
+                csvParser = format.parse(new InputStreamReader(stream));
             } catch (IOException e) {
                 throw new RuntimeException("Error reading file: " + e);
             }
 
             boolean headerParsed = false;
 
-            for (CSVRecord record : csvParser) {
+            try {
+                for (CSVRecord record : csvParser) {
 
-                if(!headerParsed) {
-                    headerParsed = true;
-                    continue;
+                    if(!headerParsed) {
+                        headerParsed = true;
+                        continue;
+                    }
+
+                    String accountNumber = record.get(ACCOUNT_NUMBER);
+                    String zip = record.get(ZIP);
+                    String insurance = record.get(INSURANCE);
+                    String date = record.get(APPT_DATE);
+                    String resource = record.get(APPT_RESOURCE);
+
+
+                    if(!uniqueAccounts.contains(accountNumber)) {
+                        uniqueAccounts.add(accountNumber);
+
+                        if(!zipCount.containsKey(zip)) {
+                            zipCount.put(zip, 0);
+                        }
+                        zipCount.put(zip, zipCount.get(zip) + 1);
+
+                        String city = zipMap.get(zip);
+                        if(city == null) {
+                            unknownZips.append("["+zip+"]");
+                            city = "other";
+                        }
+                        if(!cityCount.containsKey(city)) {
+                            cityCount.put(city, 0);
+                        }
+                        cityCount.put(city, cityCount.get(city) + 1);
+
+                        if(!insuranceCount.containsKey(insurance)) {
+                            insuranceCount.put(insurance, 0);
+                        }
+                        insuranceCount.put(insurance, insuranceCount.get(insurance) + 1);
+                    }
+
+                    if(!resourceCount.containsKey(resource)) {
+                        resourceCount.put(resource, new HashSet<>());
+                    }
+                    String resourceKey = accountNumber + "-" + date;
+                    resourceCount.get(resource).add(resourceKey);
+
                 }
-
-                String accountNumber = record.get(ACCOUNT_NUMBER);
-                String zip = record.get(ZIP);
-                String insurance = record.get(INSURANCE);
-                String date = record.get(APPT_DATE);
-                String resource = record.get(APPT_RESOURCE);
-
-
-                if(!uniqueAccounts.contains(accountNumber)) {
-                    uniqueAccounts.add(accountNumber);
-
-                    if(!zipCount.containsKey(zip)) {
-                        zipCount.put(zip, 0);
+            } finally {
+                try {
+                    if(csvParser != null && !csvParser.isClosed()) {
+                        csvParser.close();
                     }
-                    zipCount.put(zip, zipCount.get(zip) + 1);
-
-                    String city = zipMap.get(zip);
-                    if(city == null) {
-                        unknownZips.append("["+zip+"]");
-                        city = "other";
-                    }
-                    if(!cityCount.containsKey(city)) {
-                        cityCount.put(city, 0);
-                    }
-                    cityCount.put(city, cityCount.get(city) + 1);
-
-                    if(!insuranceCount.containsKey(insurance)) {
-                        insuranceCount.put(insurance, 0);
-                    }
-                    insuranceCount.put(insurance, insuranceCount.get(insurance) + 1);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-
-                if(!resourceCount.containsKey(resource)) {
-                    resourceCount.put(resource, new HashSet<>());
-                }
-                String resourceKey = accountNumber + "-" + date;
-                resourceCount.get(resource).add(resourceKey);
-
             }
         });
 
         final StringBuffer sb = new StringBuffer();
 
         sb.append("Files processed: ");
-        csvPaths.forEach((file) -> sb.append("\n" + file));
-        sb.append("\n\n");
+        csvPaths.forEach((file) -> sb.append(NEWLINE + file));
+        sb.append(NEWLINE + NEWLINE);
 
         sb.append("\nUnique accounts: " + uniqueAccounts.size());
 
-        sb.append("\n\n");
+        sb.append(NEWLINE + NEWLINE);
         sb.append("\nZip totals: ");
-        zipCount.forEach((z,cnt) -> sb.append("\n" + z + ": " + cnt));
+        zipCount.forEach((z,cnt) -> sb.append(NEWLINE + z + ": " + cnt));
 
-        sb.append("\n\n");
+        sb.append(NEWLINE + NEWLINE);
         String unknowZipsString = unknownZips.toString();
         if(!unknowZipsString.isEmpty()) {
             sb.append("\nUnknown zips: " + unknowZipsString);
         }
 
-        sb.append("\n\n");
+        sb.append(NEWLINE + NEWLINE);
         sb.append("\nCity totals: ");
-        cityCount.forEach((c,cnt) -> sb.append("\n" + c + ": " + cnt));
+        cityCount.forEach((c,cnt) -> sb.append(NEWLINE + c + ": " + cnt));
 
-        sb.append("\n\n");
+        sb.append(NEWLINE + NEWLINE);
         sb.append("\nInsurance totals: ");
-        insuranceCount.forEach((i,cnt) -> sb.append("\n" + i + ": " + cnt));
+        insuranceCount.forEach((i,cnt) -> sb.append(NEWLINE + i + ": " + cnt));
 
-        sb.append("\n\n");
+        sb.append(NEWLINE + NEWLINE);
         sb.append("\nResource totals: ");
-        resourceCount.forEach((i,cnt) -> sb.append("\n" + i + ": " + cnt.size()));
+        resourceCount.forEach((i,cnt) -> sb.append(NEWLINE + i + ": " + cnt.size()));
 
-        Files.write(processedPath.resolve("results.csv"), sb.toString().getBytes());
+        Files.write(processedPath.resolve("results.txt"), sb.toString().getBytes());
 
         csvPaths.forEach((file) -> {
             Path temp = null;
